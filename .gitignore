@@ -1,0 +1,9 @@
+# Specify filepatterns you want git to ignore.
+
+ccs_project/Debug
+ccs_project/.xdchelp
+ccs_project/.config/*
+ccs_project/.launches/*
+ccs_project/src/.exclude
+ccs_project/src/sysbios
+ccs_project/src/makefile.libs
