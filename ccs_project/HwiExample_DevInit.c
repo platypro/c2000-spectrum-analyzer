@@ -26,6 +26,15 @@ EALLOW;
     GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;
     GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
 
+    //configure green led
+    GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 0; //set pin as gpio
+    GpioCtrlRegs.GPADIR.bit.GPIO2 = 1; //set gpio as output
+    GpioDataRegs.GPASET.bit.GPIO2 = 1; //initialize output value to "1"
+    //configure blue led
+    GpioCtrlRegs.GPAMUX1.bit.GPIO3 = 0; //set pin as gpio
+    GpioCtrlRegs.GPADIR.bit.GPIO3 = 1; //set gpio as output
+    GpioDataRegs.GPASET.bit.GPIO3 = 1; //initialize output value to "1"
+
     //---------------------------------------------------------------
     // INITIALIZE A-D
     //---------------------------------------------------------------
@@ -42,7 +51,7 @@ EALLOW;
     AnalogSubsysRegs.TSNSCTL.bit.ENABLE = 1; //connect temp sensor to ADCIN13 on ADC-A
 
     AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 2; //trigger source = CPU1 Timer 1
-    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 13; //set SOC0 to sample A5
+    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 1;//13; //set SOC0 to sample A5 ***modified to 1 with jumper cable to sample microphone***
     AdcaRegs.ADCSOC0CTL.bit.ACQPS = 139; //set SOC0 window to 139 SYSCLK cycles
     AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //connect interrupt ADCINT1 to EOC0
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable interrupt ADCINT1*/
