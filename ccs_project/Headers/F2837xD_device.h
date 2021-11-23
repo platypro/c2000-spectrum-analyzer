@@ -276,7 +276,7 @@ typedef _Bool status_t;
 typedef int             	int16;
 typedef long            	int32;
 typedef long long			int64;
-typedef unsigned int    	Uint16;
+typedef unsigned int    	Uint16; //Both defined in std.h
 typedef unsigned long   	Uint32;
 typedef unsigned long long	Uint64;
 typedef float           	float32;
