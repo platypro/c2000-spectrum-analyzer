@@ -29,11 +29,11 @@ EALLOW;
     //configure green led
     GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 0; //set pin as gpio
     GpioCtrlRegs.GPADIR.bit.GPIO2 = 1; //set gpio as output
-    GpioDataRegs.GPASET.bit.GPIO2 = 1; //initialize output value to "1"
+    GpioDataRegs.GPASET.bit.GPIO2 = 0; //initialize output value to "1"
     //configure blue led
     GpioCtrlRegs.GPAMUX1.bit.GPIO3 = 0; //set pin as gpio
     GpioCtrlRegs.GPADIR.bit.GPIO3 = 1; //set gpio as output
-    GpioDataRegs.GPASET.bit.GPIO3 = 1; //initialize output value to "1"
+    GpioDataRegs.GPASET.bit.GPIO3 = 0; //initialize output value to "1"
 
     //---------------------------------------------------------------
     // INITIALIZE A-D
