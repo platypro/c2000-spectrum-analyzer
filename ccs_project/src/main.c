@@ -9,7 +9,10 @@
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Swi.h>
-#include <Headers/F2837xD_device.h>
+#include <F2837xD_device.h>
+
+#include <dsp.h>
+#include "fpu32/fpu_vector.h"
 
 #define xdc__strict //suppress typedef warnings
 
@@ -61,13 +64,7 @@ Void sample_microphone(Void) //Configured to sample at 10kHz or 100us period bet
  */
 Void SwiFxn(UArg a0, UArg a1) //will contain the fft function call
 {
-    System_printf("enter SwiFxn()\n");
-
     GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
-
-    System_printf("exit SwiFxn()\n");
-
-    System_flush(); /* force SysMin output to console */
 }
 
 /*
@@ -82,6 +79,17 @@ Void taskFxn(UArg a0, UArg a1) //will contain the rendering portion
     System_printf("exit taskFxn()\n");
 
     System_flush(); /* force SysMin output to console */
+}
+
+// Test function for fpu library
+void test_fpulib()
+{
+    float y[4];
+    float w[4];
+    float x[4];
+    w[0] = 5.0f;
+    x[0] = 6.0f;
+    mpy_SP_RVxRV_2 (y, w, x,4);
 }
 
 /*
