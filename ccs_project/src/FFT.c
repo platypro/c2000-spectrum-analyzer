@@ -47,7 +47,7 @@ float sinfactor(int k, int n, int N)
 }
 
 ////////////////Bit Reverse Functions///////////////////////
-void reversearray(COMPLEX *x,int N,int* masks)
+void reversearray(COMPLEX *x,int* masks,int N)
 {
     COMPLEX temp;
     int maskexp = logbase2(N);
@@ -108,7 +108,7 @@ void fftN(COMPLEX *x,COMPLEX *t, unsigned int s,unsigned int j)
 }
 void calcfftN(COMPLEX *x, COMPLEX *t, int N)
 {
-    float gain = 1/N;
+    float gain = (float)2/N;
     int stage_count,jump_count,i;
     int stage_max = logbase2(N);
     for(stage_count = 1; stage_count <= stage_max; stage_count++)

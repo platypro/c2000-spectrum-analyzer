@@ -22,7 +22,7 @@ float cosfactor(int k, int n, int N);
 
 float sinfactor(int k, int n, int N);
 
-void reversearray(COMPLEX *x, int N,int* masks);
+void reversearray(COMPLEX *x,int* masks, int N);
 
 void twiddle(COMPLEX *t, int n);
 

@@ -11,15 +11,16 @@
 #include <ti/sysbios/knl/Swi.h>
 #include <F2837xD_device.h>
 
-#include <dsp.h>
-#include "fpu32/fpu_vector.h"
+#include "dsp/include/dsp.h"
+#include "dsp/include/fpu32/fpu_vector.h"
+#include "dsp/include/fpu32/fpu_cfft.h"
 #include "math.h"
 
 #include "FFT.h"
 
 #define xdc__strict //suppress typedef warnings
 
-#define N 64
+#define N 256
 #define PI 3.1415926535
 
 //function prototypes:
@@ -27,16 +28,18 @@ extern void DeviceInit(void);
 
 int16 mic_reading;
 int16 mask[N]={0};
-COMPLEX buf_0[N]={0};
-COMPLEX buf_1[N]={0};
-COMPLEX twid[N]={0};
 int16 buf_index=0;
 bool buf_flag=0;
+bool buf_0_full=0;
 bool buf_1_full=0;
-bool buf_2_full=0;
+float32 buf_0[2*N]={0};
+float32 buf_1[2*N]={0};
 float32 test_data[N];
-COMPLEX test_buf[N]={0};
 
+CFFT_F32_STRUCT cfft;
+CFFT_F32_STRUCT_Handle cfft_hnd = &cfft;
+float32 cfft_twid[N];
+float32 cfft_out[2*N];
 
 //Swi handle defined in .cfg file:
 extern const Swi_Handle Swi0;
@@ -50,7 +53,6 @@ extern void DeviceInit(void);
  */
 Void sample_microphone(Void) //Configured to sample at 10kHz or 100us period between samples in .cfg
 {
-    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
 
     //read ADC value from microphone
 //    mic_reading = (int16)(AdcaResultRegs.ADCRESULT0); //get reading
@@ -58,18 +60,19 @@ Void sample_microphone(Void) //Configured to sample at 10kHz or 100us period bet
 
     mic_reading=test_data[buf_index];
 
+
+    if(buf_flag) //fill buffer according to flag
+        buf_1[2*buf_index]=mic_reading;
+    else
+        buf_0[2*buf_index]=mic_reading;
+    buf_index++; //increment buffer index
+
     if(buf_index>=N){ //check if buffer index out of range/full
         buf_index=0; //reset to zero
         buf_flag^=1; //switch buffers
         Swi_post(Swi0); //test post function
     }
-    if(buf_flag) //fill buffer according to flag
-        buf_1[buf_index].real=mic_reading;
-    else
-        buf_0[buf_index].real=mic_reading;
-    buf_index++; //increment buffer index
 
-    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
 }
 
 /*
@@ -77,14 +80,22 @@ Void sample_microphone(Void) //Configured to sample at 10kHz or 100us period bet
  */
 Void SwiFxn(UArg a0, UArg a1) //will contain the fft function call
 {
+    if(buf_flag){
+        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
+        cfft_hnd->InPtr = buf_0;
+        CFFT_f32u(cfft_hnd);
+        CFFT_f32s_mag(cfft_hnd);
+        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
 
-    GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
-    // Reverse Input Array
-    reversearray(test_buf,N,mask);
-    // Calculate Frequency Spectrum Array
-    calcfftN(test_buf,twid,N);
-    GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
+    }
+    else{
+        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+        cfft_hnd->InPtr = buf_1;
+        CFFT_f32u(cfft_hnd);
+        CFFT_f32s_mag(cfft_hnd);
+        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
 
+    }
 }
 
 /*
@@ -117,8 +128,12 @@ Int main()
         BIOS_exit(0);
     }
 
-    // Create Twiddle Factors
-    twiddle(twid,N);
+    cfft_hnd->OutPtr = cfft_out;
+    cfft_hnd->CoefPtr = cfft_twid;
+    cfft_hnd->FFTSize = N;
+    cfft_hnd->Stages = logbase2(N);
+    CFFT_f32_sincostable(cfft_hnd);
+
     // Generate sample waveforms:
     int i;
     for(i=0; i < (N); i++)
