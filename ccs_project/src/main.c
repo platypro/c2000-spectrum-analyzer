@@ -9,14 +9,26 @@
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Swi.h>
+#include <ti/sysbios/knl/Semaphore.h>
 #include <F2837xD_device.h>
 
 #include "dsp/include/dsp.h"
-#include "dsp/include/fpu32/fpu_vector.h"
 #include "dsp/include/fpu32/fpu_cfft.h"
+#include "dsp/include/fpu32/fpu_vector.h"
+#include "spi.h"
 #include "math.h"
-
 #include "FFT.h"
+#include <stdio.h>
+#include <string.h>
+
+
+#include "driverlib.h"
+#include "device.h"
+#include "usb/include/usb_hal.h"
+#include "usb/include/usblib.h"
+#include "usb/include/usb_ids.h"
+#include "usb/include/device/usbdevice.h"
+#include "usb/include/device/usbdbulk.h"
 
 #define xdc__strict //suppress typedef warnings
 
@@ -26,75 +38,98 @@
 //function prototypes:
 extern void DeviceInit(void);
 
-int16 mic_reading;
-int16 mask[N]={0};
+
 int16 buf_index=0;
-bool buf_flag=0;
-bool buf_0_full=0;
-bool buf_1_full=0;
+int16 buf_flag=0;
+int16 buf_0_full=0;
+int16 buf_1_full=0;
+float32 mic_reading;
+float32 test_data[N];
+float32 twid[N]={0};
 float32 buf_0[2*N]={0};
 float32 buf_1[2*N]={0};
-float32 test_data[N];
-
+float32 buf_out[2*N]={0};
 CFFT_F32_STRUCT cfft;
 CFFT_F32_STRUCT_Handle cfft_hnd = &cfft;
-float32 cfft_twid[N];
-float32 cfft_out[2*N];
+
 
 //Swi handle defined in .cfg file:
 extern const Swi_Handle Swi0;
-
+extern const Swi_Handle Swi1;
+extern Semaphore_Handle sem0;
 //function prototypes:
 extern void DeviceInit(void);
-
 
 /*
  *  ======== HWIFxn ========
  */
-Void sample_microphone(Void) //Configured to sample at 10kHz or 100us period between samples in .cfg
+Void sample_adc(Void) //Configured to sample at 10kHz or 100us period between samples in .cfg
 {
+    AdcaRegs.ADCSOCFRC1.all = 0x0001;
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
 
     //read ADC value from microphone
-//    mic_reading = (int16)(AdcaResultRegs.ADCRESULT0); //get reading
-//    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
-
-    mic_reading=test_data[buf_index];
-
-
-    if(buf_flag) //fill buffer according to flag
-        buf_1[2*buf_index]=mic_reading;
-    else
+    mic_reading = (float32)(AdcaResultRegs.ADCRESULT0); //get reading
+    if(buf_flag){ //fill buffer according to flag
+        buf_1[2*buf_index]=mic_reading; //load real array position
+        buf_1[1+2*buf_index]=0.0; //zero previous complex data if any
+    }
+    else{
         buf_0[2*buf_index]=mic_reading;
+        buf_0[1+2*buf_index]=0.0;
+    }
     buf_index++; //increment buffer index
-
     if(buf_index>=N){ //check if buffer index out of range/full
         buf_index=0; //reset to zero
         buf_flag^=1; //switch buffers
-        Swi_post(Swi0); //test post function
+        Swi_post(Swi1); //test post function
     }
-
 }
+
 
 /*
  *  ======== SwiFxn ========
  */
-Void SwiFxn(UArg a0, UArg a1) //will contain the fft function call
+Void load_buffer(UArg a0, UArg a1)
+{
+    DINT;
+//    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+//    //read ADC value from microphone
+//    mic_reading = (float32)(AdcaResultRegs.ADCRESULT0); //get reading
+//    if(buf_flag){ //fill buffer according to flag
+//        buf_1[2*buf_index]=mic_reading; //load real array position
+//        buf_1[1+2*buf_index]=0.0; //zero previous complex data if any
+//    }
+//    else{
+//        buf_0[2*buf_index]=mic_reading;
+//        buf_0[1+2*buf_index]=0.0;
+//    }
+//    buf_index++; //increment buffer index
+//    if(buf_index>=N){ //check if buffer index out of range/full
+//        buf_index=0; //reset to zero
+//        buf_flag^=1; //switch buffers
+//        Swi_post(Swi1); //test post function
+//    }
+//    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+    EINT;
+}
+Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
 {
     if(buf_flag){
         GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
         cfft_hnd->InPtr = buf_0;
         CFFT_f32u(cfft_hnd);
-        CFFT_f32s_mag(cfft_hnd);
+        CFFT_f32_mag_TMU0(cfft_hnd);
         GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
-
+//        memset(buf_0,0.0,sizeof(buf_0));
     }
     else{
-        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+//        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
         cfft_hnd->InPtr = buf_1;
         CFFT_f32u(cfft_hnd);
-        CFFT_f32s_mag(cfft_hnd);
-        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
-
+        CFFT_f32_mag_TMU0(cfft_hnd);
+//        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+//        memset(buf_1,0.0,sizeof(buf_1));
     }
 }
 
@@ -128,19 +163,18 @@ Int main()
         BIOS_exit(0);
     }
 
-    cfft_hnd->OutPtr = cfft_out;
-    cfft_hnd->CoefPtr = cfft_twid;
+    cfft_hnd->OutPtr = buf_out;
+    cfft_hnd->CoefPtr = twid;
     cfft_hnd->FFTSize = N;
     cfft_hnd->Stages = logbase2(N);
     CFFT_f32_sincostable(cfft_hnd);
 
     // Generate sample waveforms:
-    int i;
-    for(i=0; i < (N); i++)
-    {
-        test_data[i]=sinf(2*PI*i/N);
-    }
-
+//    int i;
+//    for(i=0; i < (N); i++)
+//    {
+//        test_data[i]=sinf(2*PI*i/N);
+//    }
     BIOS_start();    /* does not return */
     return(0);
 }
