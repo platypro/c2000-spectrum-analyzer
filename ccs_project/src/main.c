@@ -21,9 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 
-
+#include "display/display.h"
 #include "driverlib.h"
 #include "device.h"
+#include "board.h"
 #include "usb/include/usb_hal.h"
 #include "usb/include/usblib.h"
 #include "usb/include/usb_ids.h"
@@ -57,6 +58,7 @@ CFFT_F32_STRUCT_Handle cfft_hnd = &cfft;
 extern const Swi_Handle Swi0;
 extern const Swi_Handle Swi1;
 extern Semaphore_Handle sem0;
+extern Semaphore_Handle semDisplayTrigger;
 //function prototypes:
 extern void DeviceInit(void);
 
@@ -86,6 +88,27 @@ Void sample_adc(Void) //Configured to sample at 10kHz or 100us period between sa
     }
 }
 
+Void display_trigger(Void)
+{
+    Semaphore_post(semDisplayTrigger);
+}
+
+#pragma DATA_SECTION(testData, "displaybuf");
+char testData[62] = "When the moon hits your eye like a big pizza pie that's amore.";
+
+Void display_updtask(Void)
+{
+    // Shift to appease SPI (Wants in higher byte)
+    int i;
+    for(i = 0; i<62; i++)
+        {  testData[i] <<= 8; }
+
+    for(;;)
+    {
+        Semaphore_pend(semDisplayTrigger, BIOS_WAIT_FOREVER);
+        //display_write((uint16_t*)testData, 62);
+    }
+}
 
 /*
  *  ======== SwiFxn ========
@@ -155,6 +178,10 @@ Int main()
 
     System_printf("enter main()\n");
     DeviceInit();
+
+    Board_init();
+
+    display_init();
 
     Error_init(&eb);
     task = Task_create(taskFxn, NULL, &eb);

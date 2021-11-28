@@ -1,16 +1,12 @@
-// Filename:            HwiExample_DeviceInit.c
+// devInit.c
+// Driver Initalization
 //
-// Description:	        Initialization code for Hwi Example
-//
-// Version:             1.0
-//
-// Target:              TMS320F28379D
-//
-// Author:              David Romalo
-//
-// Date:                19Oct2021
+// Authors: Brian Card, Aeden McClain
+// Adapted from code by David Romalo
 
 #include <F2837xD_device.h>
+
+#include "board.h"
 
 extern void DelayUs(Uint16);
 
@@ -59,5 +55,13 @@ EALLOW;
     AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //connect interrupt ADCINT1 to EOC0
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable interrupt ADCINT1*/
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+
+    SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_SPIA);
+    SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_DMA);
+
+    SysCtl_selectSecMaster(0, SYSCTL_SEC_MASTER_DMA);
 EDIS;
 }
+
+void __error__(char *filename, uint32_t line)
+    { ESTOP0; }

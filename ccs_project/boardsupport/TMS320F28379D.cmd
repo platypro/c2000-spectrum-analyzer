@@ -172,6 +172,8 @@ SECTIONS
                             RAMGS10 | RAMGS11 | RAMGS12 | RAMGS13 | RAMGS14 |
                             RAMGS15 PAGE = 1
 
+	displaybuf          : > RAMGS0, PAGE = 1
+
     /* The following section definitions are required when using the IPC API Drivers */
     GROUP : > CPU1TOCPU2RAM, PAGE = 1
     {

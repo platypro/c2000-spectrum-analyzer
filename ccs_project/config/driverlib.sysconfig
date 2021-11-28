@@ -4,3 +4,30 @@
  * @cliArgs --device "F2837xD" --package "F2837xD_176PTP" --part "F2837xD_176PTP" --product "C2000WARE@3.01.00.00"
  * @versions {"tool":"1.10.0+2163"}
  */
+
+/**
+ * Import the modules used in this configuration.
+ */
+const spi  = scripting.addModule("/driverlib/spi.js", {}, false);
+const spi1 = spi.addInstance();
+
+/**
+ * Write custom configuration values to the imported modules.
+ */
+spi1.$name                  = "spi_display";
+spi1.transferProtocol       = "SPI_PROT_POL1PHA0";
+spi1.mode                   = "SPI_MODE_MASTER";
+spi1.dataWidth              = "8";
+spi1.bitRate                = 12500000;
+spi1.enabledFIFOInterrupts  = ["SPI_INT_TXFF"];
+spi1.spi.$assign            = "SPIA";
+spi1.spi.spisimoPin.$assign = "GPIO58";
+spi1.spi.spisomiPin.$assign = "GPIO59";
+spi1.spi.spiclkPin.$assign  = "GPIO60";
+
+/**
+ * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
+ * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
+ * re-solve from scratch.
+ */
+spi1.spi.spistePin.$suggestSolution = "GPIO19";
