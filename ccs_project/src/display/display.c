@@ -7,6 +7,8 @@
 
 #include "display.h"
 
+#include "command.h"
+
 #include "board.h"
 #include "F2837xD_device.h"
 
@@ -48,7 +50,30 @@ void display_init()
 
     Semaphore_post(semDisplay);
 
-    //TODO: Post start-up commands here
+    display_pwctr1_t power = {0};
+    power.AVDD  = DISPLAY_AVDD_4V5;
+    power.VRHP  = 0x0AU;
+    power.VRHN  = 0x00U;
+    power.MODE  = 0x00U;
+    power.VRHN5 = 0x00U;
+    power.VRHP5 = 0x00U;
+
+    display_madctl_t mad = {0};
+    mad.padding = 0U;
+    mad.MY  = DISPLAY_MY_DECREMENT;
+    mad.MX  = DISPLAY_MX_DECREMENT;
+    mad.MV  = DISPLAY_MV_NORMAL;
+    mad.ML  = DISPLAY_ML_DECREMENT;
+    mad.RGB = DISPLAY_RGB_RGB;
+    mad.MH  = DISPLAY_MH_DECREMENT;
+
+    display_command_slpout();
+    display_command_pwctr1(power);
+    display_command_colmod(DISPLAY_IFPF_16);
+    display_command_madctl(mad);
+
+    /* turn on the display */
+    display_command_dispon();
 }
 
 void display_write8(uint32_t value)

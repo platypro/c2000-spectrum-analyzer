@@ -98,6 +98,8 @@ char testData[62] = "When the moon hits your eye like a big pizza pie that's amo
 
 Void display_updtask(Void)
 {
+    display_init();
+
     // Shift to appease SPI (Wants in higher byte)
     int i;
     for(i = 0; i<62; i++)
@@ -180,8 +182,6 @@ Int main()
     DeviceInit();
 
     Board_init();
-
-    display_init();
 
     Error_init(&eb);
     task = Task_create(taskFxn, NULL, &eb);
