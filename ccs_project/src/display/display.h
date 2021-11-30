@@ -6,6 +6,14 @@
 #define SRC_DISPLAY_H_
 
 #include <xdc/std.h>
+typedef struct
+{
+    unsigned int r : 5;
+    unsigned int g : 6;
+    unsigned int b : 5;
+
+} display_colour_t;
+
 
 void display_init();
 void display_update();

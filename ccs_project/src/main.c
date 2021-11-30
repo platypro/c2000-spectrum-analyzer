@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "display/display.h"
+#include "display/command.h"
 #include "driverlib.h"
 #include "device.h"
 #include "board.h"
@@ -32,6 +33,7 @@
 #include "usb/include/device/usbdbulk.h"
 
 #define xdc__strict //suppress typedef warnings
+
 
 #define N 256
 #define PI 3.1415926535
@@ -72,15 +74,16 @@ Void sample_adc(Void) //Configured to sample at 10kHz or 100us period between sa
 
     //read ADC value from microphone
     mic_reading = (float32)(AdcaResultRegs.ADCRESULT0); //get reading
-    if(buf_flag){ //fill buffer according to flag
+    if(buf_flag && !buf_1_full){ //fill buffer according to flag
         buf_1[2*buf_index]=mic_reading; //load real array position
         buf_1[1+2*buf_index]=0.0; //zero previous complex data if any
+        buf_index++; //increment buffer index
     }
-    else{
+    if(!buf_flag && !buf_0_full){
         buf_0[2*buf_index]=mic_reading;
         buf_0[1+2*buf_index]=0.0;
+        buf_index++; //increment buffer index
     }
-    buf_index++; //increment buffer index
     if(buf_index>=N){ //check if buffer index out of range/full
         buf_index=0; //reset to zero
         buf_flag^=1; //switch buffers
@@ -88,56 +91,10 @@ Void sample_adc(Void) //Configured to sample at 10kHz or 100us period between sa
     }
 }
 
-Void display_trigger(Void)
-{
-    Semaphore_post(semDisplayTrigger);
-}
-
-#pragma DATA_SECTION(testData, "displaybuf");
-char testData[62] = "When the moon hits your eye like a big pizza pie that's amore.";
-
-Void display_updtask(Void)
-{
-    display_init();
-
-    // Shift to appease SPI (Wants in higher byte)
-    int i;
-    for(i = 0; i<62; i++)
-        {  testData[i] <<= 8; }
-
-    for(;;)
-    {
-        Semaphore_pend(semDisplayTrigger, BIOS_WAIT_FOREVER);
-        //display_write((uint16_t*)testData, 62);
-    }
-}
 
 /*
  *  ======== SwiFxn ========
  */
-Void load_buffer(UArg a0, UArg a1)
-{
-    DINT;
-//    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
-//    //read ADC value from microphone
-//    mic_reading = (float32)(AdcaResultRegs.ADCRESULT0); //get reading
-//    if(buf_flag){ //fill buffer according to flag
-//        buf_1[2*buf_index]=mic_reading; //load real array position
-//        buf_1[1+2*buf_index]=0.0; //zero previous complex data if any
-//    }
-//    else{
-//        buf_0[2*buf_index]=mic_reading;
-//        buf_0[1+2*buf_index]=0.0;
-//    }
-//    buf_index++; //increment buffer index
-//    if(buf_index>=N){ //check if buffer index out of range/full
-//        buf_index=0; //reset to zero
-//        buf_flag^=1; //switch buffers
-//        Swi_post(Swi1); //test post function
-//    }
-//    GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
-    EINT;
-}
 Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
 {
     if(buf_flag){
@@ -145,14 +102,18 @@ Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
         cfft_hnd->InPtr = buf_0;
         CFFT_f32u(cfft_hnd);
         CFFT_f32_mag_TMU0(cfft_hnd);
+        buf_0_full=1;
+//        Semaphore_post(sem0);
         GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
 //        memset(buf_0,0.0,sizeof(buf_0));
     }
-    else{
+    if(!buf_flag){
 //        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
         cfft_hnd->InPtr = buf_1;
         CFFT_f32u(cfft_hnd);
         CFFT_f32_mag_TMU0(cfft_hnd);
+        buf_1_full=1;
+//        Semaphore_post(sem0);
 //        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
 //        memset(buf_1,0.0,sizeof(buf_1));
     }
@@ -161,6 +122,78 @@ Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
 /*
  *  ======== taskFxn ========
  */
+Void display_trigger(Void)
+{
+    Semaphore_post(semDisplayTrigger);
+}
+
+#pragma DATA_SECTION(writeData, "displaybuf");
+char writeData[256];
+
+Void display_updtask(Void)
+{
+    display_init();
+
+    // Shift to appease SPI (Wants in higher byte)
+    int i,j,limit;
+
+    for(i = 0; i<62; i++)
+        {  writeData[i] <<= 8; }
+
+    display_command_raset(0+2, 127+2);
+    display_command_caset(0, 127);
+    display_command_ramwr();
+    display_colour_t colour1 = {.r=0,.g=31,.b=0};
+    display_colour_t colour2 = {.r=0,.g=0,.b=31};
+    for(;;)
+    {
+        Semaphore_pend(semDisplayTrigger, BIOS_WAIT_FOREVER);
+        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+//        Semaphore_pend(sem0,BIOS_WAIT_FOREVER);
+
+        if(buf_0_full){
+
+            for(i=0; i<128;i++){
+                limit = (int16)(buf_0[i]/100);
+                if(limit>128)
+                    limit=128;
+                for(j=0;j<limit;j++){
+                    writeData[j * 2]     = *((Uint16*)&colour1) & 0xFF00U;
+                    writeData[j * 2 + 1] = (*((Uint16*)&colour1) & 0x00FFU) << 8;
+
+                }
+                for(j=limit;j<128;j++){
+                    writeData[j * 2]     = 0xFF00;
+                    writeData[j * 2 + 1] = 0xFF00;
+
+                }
+                display_write((Uint16*)writeData, 256);
+            }
+            buf_0_full=0;
+        }
+        else if(buf_1_full){
+            for(i=0; i<128;i++){
+                limit = (int16)(buf_1[i]/100);
+                if(limit>128)
+                    limit=128;
+                for(j=0;j<limit;j++){
+                    writeData[j * 2]     = *((Uint16*)&colour2) & 0xFF00U;
+                    writeData[j * 2 + 1] = (*((Uint16*)&colour2) & 0x00FFU) << 8;
+                }
+                for(j=limit;j<128;j++){
+                    writeData[j * 2]     = 0xFF00;
+                    writeData[j * 2 + 1] = 0xFF00;
+
+                }
+                display_write((Uint16*)writeData, 256);
+            }
+            buf_1_full=0;
+        }
+        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
+    }
+}
+
+
 Void taskFxn(UArg a0, UArg a1) //will contain the rendering portion
 {
     System_printf("enter taskFxn()\n");

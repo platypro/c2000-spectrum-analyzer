@@ -56,7 +56,7 @@ void display_init()
     power.VRHP5 = 0x00U;
 
     display_madctl_t mad = {0};
-    mad.MY  = 1U;
+    mad.MY  = 0U;
     mad.MX  = 1U;
     mad.MV  = 1U;
     mad.ML  = DISPLAY_ML_DECREMENT;
