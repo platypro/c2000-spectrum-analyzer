@@ -12,9 +12,9 @@
 #include <ti/sysbios/knl/Semaphore.h>
 #include <F2837xD_device.h>
 
-#include "dsp/include/dsp.h"
-#include "dsp/include/fpu32/fpu_cfft.h"
-#include "dsp/include/fpu32/fpu_vector.h"
+#include "dsp.h"
+#include "fpu32/fpu_cfft.h"
+#include "fpu32/fpu_vector.h"
 #include "spi.h"
 #include "math.h"
 #include "FFT.h"
@@ -26,11 +26,6 @@
 #include "driverlib.h"
 #include "device.h"
 #include "board.h"
-#include "usb/include/usb_hal.h"
-#include "usb/include/usblib.h"
-#include "usb/include/usb_ids.h"
-#include "usb/include/device/usbdevice.h"
-#include "usb/include/device/usbdbulk.h"
 
 #define xdc__strict //suppress typedef warnings
 
@@ -98,14 +93,12 @@ Void sample_adc(Void) //Configured to sample at 10kHz or 100us period between sa
 Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
 {
     if(buf_flag){
-        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
+//        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
         cfft_hnd->InPtr = buf_0;
         CFFT_f32u(cfft_hnd);
         CFFT_f32_mag_TMU0(cfft_hnd);
         buf_0_full=1;
-//        Semaphore_post(sem0);
-        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
-//        memset(buf_0,0.0,sizeof(buf_0));
+//        GpioDataRegs.GPATOGGLE.bit.GPIO2 = 1; //toggle green LED
     }
     if(!buf_flag){
 //        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
@@ -113,9 +106,8 @@ Void calc_fft(UArg a0, UArg a1) //will contain the fft function call
         CFFT_f32u(cfft_hnd);
         CFFT_f32_mag_TMU0(cfft_hnd);
         buf_1_full=1;
-//        Semaphore_post(sem0);
 //        GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
-//        memset(buf_1,0.0,sizeof(buf_1));
+
     }
 }
 
@@ -149,7 +141,6 @@ Void display_updtask(Void)
     {
         Semaphore_pend(semDisplayTrigger, BIOS_WAIT_FOREVER);
         GpioDataRegs.GPATOGGLE.bit.GPIO3 = 1; //toggle blue LED
-//        Semaphore_pend(sem0,BIOS_WAIT_FOREVER);
 
         if(buf_0_full){
 
@@ -193,22 +184,11 @@ Void display_updtask(Void)
     }
 }
 
-
-Void taskFxn(UArg a0, UArg a1) //will contain the rendering portion
-{
-    System_printf("enter taskFxn()\n");
-
-    System_printf("exit taskFxn()\n");
-
-    System_flush(); /* force SysMin output to console */
-}
-
 /*
  *  ======== main ========
  */
 Int main()
 { 
-    Task_Handle task;
     Error_Block eb;
 
     System_printf("enter main()\n");
@@ -217,11 +197,6 @@ Int main()
     Board_init();
 
     Error_init(&eb);
-    task = Task_create(taskFxn, NULL, &eb);
-    if (task == NULL) {
-        System_printf("Task_create() failed!\n");
-        BIOS_exit(0);
-    }
 
     cfft_hnd->OutPtr = buf_out;
     cfft_hnd->CoefPtr = twid;
@@ -229,12 +204,6 @@ Int main()
     cfft_hnd->Stages = logbase2(N);
     CFFT_f32_sincostable(cfft_hnd);
 
-    // Generate sample waveforms:
-//    int i;
-//    for(i=0; i < (N); i++)
-//    {
-//        test_data[i]=sinf(2*PI*i/N);
-//    }
     BIOS_start();    /* does not return */
     return(0);
 }

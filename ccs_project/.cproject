@@ -52,6 +52,7 @@
 									<listOptionValue builtIn="false" value="${COM_TI_C2000WARE_SOFTWARE_PACKAGE_INSTALL_DIR}\device_support\f2837xd\headers\include"/>
 									<listOptionValue builtIn="false" value="${COM_TI_C2000WARE_SOFTWARE_PACKAGE_INSTALL_DIR}\driverlib\f2837xd\driverlib"/>
 									<listOptionValue builtIn="false" value="${COM_TI_C2000WARE_SOFTWARE_PACKAGE_INSTALL_DIR}"/>
+									<listOptionValue builtIn="false" value="${COM_TI_C2000WARE_SOFTWARE_PACKAGE_INSTALL_DIR}\libraries\dsp\FPU\c28\include"/>
 									<listOptionValue builtIn="false" value="${XDC_CG_ROOT}\packages\xdc"/>
 									<listOptionValue builtIn="false" value="${XDC_CG_ROOT}"/>
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}"/>
