@@ -1,9 +1,6 @@
-/*(
- * display.c
- *
- *  Created on: Nov. 27, 2021
- *      Author: platypro
- */
+// Display.c
+// Display driver
+// Written by: Aeden McClain
 
 #include "display.h"
 
@@ -59,10 +56,9 @@ void display_init()
     power.VRHP5 = 0x00U;
 
     display_madctl_t mad = {0};
-    mad.padding = 0U;
-    mad.MY  = DISPLAY_MY_DECREMENT;
-    mad.MX  = DISPLAY_MX_DECREMENT;
-    mad.MV  = DISPLAY_MV_NORMAL;
+    mad.MY  = 1U;
+    mad.MX  = 1U;
+    mad.MV  = 1U;
     mad.ML  = DISPLAY_ML_DECREMENT;
     mad.RGB = DISPLAY_RGB_RGB;
     mad.MH  = DISPLAY_MH_DECREMENT;
@@ -125,7 +121,7 @@ void display_cmd(uint32_t cmd)
 
 void display_write(uint16_t* data, size_t length)
 {
-    Semaphore_pend(semDisplay, 0);
+    Semaphore_pend(semDisplay, BIOS_WAIT_FOREVER);
     GPIO_writePin(124, 0);
     DMA_configAddresses(DMA_CH6_BASE, (const void*)&SpiaRegs.SPITXBUF, data);
     DMA_configBurst(DMA_CH6_BASE, 1, 1, 0);
@@ -133,6 +129,4 @@ void display_write(uint16_t* data, size_t length)
 
     DMA_startChannel(DMA_CH6_BASE);
     DMA_forceTrigger(DMA_CH6_BASE);
-
-    Semaphore_pend(semDisplay, 0);
 }

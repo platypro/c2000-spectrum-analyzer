@@ -66,7 +66,7 @@
 
 typedef struct display_madctl_t_
 {
-    unsigned int padding : 2;
+    unsigned int padding2 : 2;
 
     /* Horizontal order
      *  '0' - Decrement (LCD refresh Left to Right)
@@ -103,6 +103,10 @@ typedef struct display_madctl_t_
      *  '0' - Increment, (Top to Bottom)
      */
     unsigned int MY    : 1;
+
+    unsigned int padding1c : 8;
+    unsigned int padding1b : 8;
+    unsigned int padding1a : 8;
 
 } display_madctl_t;
 
@@ -265,7 +269,10 @@ typedef struct display_invctr_t_
      */
     unsigned int NLA      : 1;
 
-    unsigned int padding1 : 5;
+    unsigned int padding2  : 5;
+    unsigned int padding1a : 8;
+    unsigned int padding1b : 8;
+    unsigned int padding1c : 8;
 
 } display_invctr_t;
 
@@ -287,12 +294,13 @@ typedef struct display_pwctr1_t_
 {
     unsigned int VRHP5    : 1; /* Refer to page 163 of datasheet */
     unsigned int VRHN5    : 1; /* Refer to page 163 of datasheet */
-    unsigned int padding2 : 4;
+    unsigned int padding3 : 4;
     unsigned int MODE     : 2;
     unsigned int VRHN     : 5; /* Refer to page 163 of datasheet */
-    unsigned int padding1 : 3;
+    unsigned int padding2 : 3;
     unsigned int VRHP     : 5; /* Refer to page 163 of datasheet */
     unsigned int AVDD     : 3;
+    unsigned int padding1 : 8;
 
 } display_pwctr1_t;
 
@@ -310,9 +318,12 @@ typedef struct display_pwctr2_t_
 {
     unsigned int VGHBT    : 2; /* refer to page 165 of datasheet */
     unsigned int VGLSEL   : 2;
-    unsigned int padding1 : 2;
+    unsigned int padding2 : 2;
     unsigned int VGH25    : 2;
 
+    unsigned int padding1a : 8;
+    unsigned int padding1b : 8;
+    unsigned int padding1c : 8;
 } display_pwctr2_t;
 
 #define DISPLAY_DC98_DIV1 (0x0U)
@@ -369,6 +380,8 @@ typedef struct display_pwctrn_t_
     unsigned int SAP      : 3;
 
     unsigned int DC98     : 2; /* Booster circuit Step-up cycle in Normal mode/ full colors. */
+
+    unsigned int padding1 : 16;
 
 } display_pwctrn_t;
 

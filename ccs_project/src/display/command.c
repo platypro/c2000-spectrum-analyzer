@@ -145,6 +145,7 @@ void display_command_colmod(Uint32 ifpf)
 void display_command_madctl(display_madctl_t ctl)
 {
     display_cmd(DISPLAY_CMD_MADCTL);
+    uint32_t ccc = *(uint32_t*)&ctl;
     display_write8(*((Uint32*)&ctl));
 }
 

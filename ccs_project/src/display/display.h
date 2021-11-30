@@ -1,9 +1,6 @@
-/*
- * display.h
- *
- *  Created on: Nov. 27, 2021
- *      Author: platypro
- */
+// Display.h
+// Display driver header
+// Written by: Aeden McClain
 
 #ifndef SRC_DISPLAY_H_
 #define SRC_DISPLAY_H_
